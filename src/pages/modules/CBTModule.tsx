@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Brain, Target, CheckCircle, Plus, Save, ArrowLeft, Lightbulb, AlertTriangle, TrendingUp, Calendar, CreditCard as Edit, Trash2, Star, Award, Clock, Heart } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
 import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
 import { useAuth } from '../../contexts/AuthContext';
+import { getTherapyContent } from '../../utils/therapyContentStorage';
 
 interface ThoughtRecord {
   id: string;
@@ -33,6 +34,7 @@ function CBTModule() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentRecord, setCurrentRecord] = useState<Partial<ThoughtRecord>>({
     date: new Date().toISOString().split('T')[0],
     situation: '',
@@ -47,6 +49,9 @@ function CBTModule() {
   const [savedRecords, setSavedRecords] = useState<ThoughtRecord[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [showDistortions, setShowDistortions] = useState(false);
+  const [adminSteps, setAdminSteps] = useState<any[]>([]);
+  const [adminInstructions, setAdminInstructions] = useState<string>('');
+  const [therapyId, setTherapyId] = useState<string>('');
 
   const cognitiveDistortions: CognitiveDistortion[] = [
     {
@@ -98,7 +103,7 @@ function CBTModule() {
     'Ashamed', 'Lonely', 'Overwhelmed', 'Disappointed', 'Confused', 'Hopeless'
   ];
 
-  const steps = [
+  const defaultSteps = [
     { number: 1, title: 'Situation', description: 'What happened?' },
     { number: 2, title: 'Automatic Thought', description: 'What went through your mind?' },
     { number: 3, title: 'Emotion', description: 'How did you feel?' },
@@ -107,12 +112,42 @@ function CBTModule() {
     { number: 6, title: 'New Emotion', description: 'How do you feel now?' }
   ];
 
+  const steps = adminSteps.length > 0
+    ? adminSteps.map((step, idx) => ({
+        number: idx + 1,
+        title: step.title,
+        description: step.prompt
+      }))
+    : defaultSteps;
+
   useEffect(() => {
     const saved = localStorage.getItem('mindcare_cbt_records');
     if (saved) {
       setSavedRecords(JSON.parse(saved));
     }
   }, []);
+
+  useEffect(() => {
+    const loadTherapyContent = () => {
+      const searchParams = new URLSearchParams(location.search);
+      const id = searchParams.get('therapyId');
+
+      if (id) {
+        setTherapyId(id);
+        const content = getTherapyContent(id);
+
+        if (content && content.isPublished && content.therapyType === 'cbt_thought_records') {
+          setAdminSteps(content.contentData.steps || []);
+          setAdminInstructions(content.contentData.instructions || '');
+        }
+      }
+    };
+
+    loadTherapyContent();
+
+    window.addEventListener('therapy-contents-updated', loadTherapyContent);
+    return () => window.removeEventListener('therapy-contents-updated', loadTherapyContent);
+  }, [location.search]);
 
   const handleInputChange = (field: string, value: any) => {
     setCurrentRecord(prev => ({ ...prev, [field]: value }));
@@ -175,6 +210,8 @@ function CBTModule() {
   };
 
   const getCurrentStepContent = () => {
+    const currentStepData = adminSteps.length > 0 ? adminSteps[currentStep - 1] : null;
+
     switch (currentStep) {
       case 1:
         return (
@@ -182,13 +219,13 @@ function CBTModule() {
             <label className={`block text-sm font-medium mb-2 ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
             }`}>
-              Describe the situation that triggered your thoughts:
+              {currentStepData?.prompt || 'Describe the situation that triggered your thoughts:'}
             </label>
             <textarea
               value={currentRecord.situation || ''}
               onChange={(e) => handleInputChange('situation', e.target.value)}
               rows={4}
-              placeholder="Be specific about what happened, when, and where..."
+              placeholder={currentStepData?.placeholder || "Be specific about what happened, when, and where..."}
               className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none ${
                 theme === 'dark'
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
@@ -203,13 +240,13 @@ function CBTModule() {
             <label className={`block text-sm font-medium mb-2 ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
             }`}>
-              What automatic thought went through your mind?
+              {currentStepData?.prompt || 'What automatic thought went through your mind?'}
             </label>
             <textarea
               value={currentRecord.automaticThought || ''}
               onChange={(e) => handleInputChange('automaticThought', e.target.value)}
               rows={3}
-              placeholder="Write down the first thought that came to mind..."
+              placeholder={currentStepData?.placeholder || "Write down the first thought that came to mind..."}
               className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none ${
                 theme === 'dark'
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
@@ -265,13 +302,13 @@ function CBTModule() {
             <label className={`block text-sm font-medium mb-2 ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
             }`}>
-              What evidence supports or contradicts this thought?
+              {currentStepData?.prompt || 'What evidence supports or contradicts this thought?'}
             </label>
             <textarea
               value={currentRecord.evidence || ''}
               onChange={(e) => handleInputChange('evidence', e.target.value)}
               rows={4}
-              placeholder="List facts that support and contradict your automatic thought..."
+              placeholder={currentStepData?.placeholder || "List facts that support and contradict your automatic thought..."}
               className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none ${
                 theme === 'dark'
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
@@ -292,13 +329,13 @@ function CBTModule() {
             <label className={`block text-sm font-medium mb-2 ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
             }`}>
-              What's a more balanced, realistic thought?
+              {currentStepData?.prompt || 'What\'s a more balanced, realistic thought?'}
             </label>
             <textarea
               value={currentRecord.balancedThought || ''}
               onChange={(e) => handleInputChange('balancedThought', e.target.value)}
               rows={4}
-              placeholder="Rewrite your thought in a more balanced, evidence-based way..."
+              placeholder={currentStepData?.placeholder || "Rewrite your thought in a more balanced, evidence-based way..."}
               className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none ${
                 theme === 'dark'
                   ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'

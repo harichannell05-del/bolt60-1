@@ -26,7 +26,11 @@ function TherapyModules() {
   useEffect(() => {
     loadTherapies();
     window.addEventListener('therapies-updated', loadTherapies);
-    return () => window.removeEventListener('therapies-updated', loadTherapies);
+    window.addEventListener('therapy-contents-updated', loadTherapies);
+    return () => {
+      window.removeEventListener('therapies-updated', loadTherapies);
+      window.removeEventListener('therapy-contents-updated', loadTherapies);
+    };
   }, []);
 
   useEffect(() => {
@@ -186,7 +190,7 @@ function TherapyModules() {
 
   const handleStartModule = (module: any) => {
     updateTherapyProgress(module.moduleId);
-    navigate(module.route);
+    navigate(`${module.route}?therapyId=${module.moduleId}`);
   };
 
   const getDifficultyColor = (difficulty: string) => {
