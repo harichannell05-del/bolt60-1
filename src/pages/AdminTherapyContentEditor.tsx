@@ -34,8 +34,10 @@ function AdminTherapyContentEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [therapy, setTherapy] = useState<Therapy | null>(null);
-  const [activeTab, setActiveTab] = useState<'general' | 'content'>('general');
+  const [activeTab, setActiveTab] = useState<'general'>('general');
   const [showPreview, setShowPreview] = useState(false);
+
+  const isCBTTherapy = therapyType === 'cbt_thought_records';
 
   const [generalSettings, setGeneralSettings] = useState({
     title: '',
@@ -214,28 +216,44 @@ function AdminTherapyContentEditor() {
         </motion.div>
 
         <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-          <div className="flex border-b border-gray-700">
-            <button
-              onClick={() => setActiveTab('general')}
-              className={`flex-1 px-6 py-4 font-semibold transition-colors ${
-                activeTab === 'general'
-                  ? 'bg-gray-700 text-white border-b-2 border-blue-500'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-750'
-              }`}
-            >
-              General Settings
-            </button>
-            <button
-              onClick={() => setActiveTab('content')}
-              className={`flex-1 px-6 py-4 font-semibold transition-colors ${
-                activeTab === 'content'
-                  ? 'bg-gray-700 text-white border-b-2 border-blue-500'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-750'
-              }`}
-            >
-              Therapy Flow Editor
-            </button>
-          </div>
+          {isCBTTherapy && (
+            <div className="flex border-b border-gray-700">
+              <button
+                onClick={() => setActiveTab('general')}
+                className={`flex-1 px-6 py-4 font-semibold transition-colors ${
+                  activeTab === 'general'
+                    ? 'bg-gray-700 text-white border-b-2 border-blue-500'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-750'
+                }`}
+              >
+                General Settings
+              </button>
+              <button
+                onClick={() => setActiveTab('content')}
+                className={`flex-1 px-6 py-4 font-semibold transition-colors ${
+                  activeTab === 'content'
+                    ? 'bg-gray-700 text-white border-b-2 border-blue-500'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-750'
+                }`}
+              >
+                Therapy Flow Editor
+              </button>
+            </div>
+          )}
+          {!isCBTTherapy && (
+            <div className="flex border-b border-gray-700">
+              <button
+                onClick={() => setActiveTab('general')}
+                className={`flex-1 px-6 py-4 font-semibold transition-colors ${
+                  activeTab === 'general'
+                    ? 'bg-gray-700 text-white border-b-2 border-blue-500'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-750'
+                }`}
+              >
+                General Settings
+              </button>
+            </div>
+          )}
 
           <div className="p-6">
             {activeTab === 'general' ? (
@@ -336,7 +354,7 @@ function AdminTherapyContentEditor() {
                   </motion.button>
                 </div>
               </motion.div>
-            ) : (
+            ) : isCBTTherapy ? (
               <motion.div
                 key="content"
                 initial={{ opacity: 0, x: 20 }}
@@ -392,7 +410,7 @@ function AdminTherapyContentEditor() {
                   </motion.button>
                 </div>
               </motion.div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
