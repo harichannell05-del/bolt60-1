@@ -36,8 +36,7 @@ function AdminTherapyContentEditor() {
   const [therapy, setTherapy] = useState<Therapy | null>(null);
   const [activeTab, setActiveTab] = useState<'general'>('general');
   const [showPreview, setShowPreview] = useState(false);
-
-  const isCBTTherapy = therapyType === 'cbt_thought_records';
+  const [therapyType, setTherapyType] = useState<keyof TherapyContentData>('cbt_thought_records');
 
   const [generalSettings, setGeneralSettings] = useState({
     title: '',
@@ -52,10 +51,11 @@ function AdminTherapyContentEditor() {
     status: 'Active' as 'Active' | 'Inactive'
   });
 
-  const [therapyType, setTherapyType] = useState<keyof TherapyContentData>('cbt_thought_records');
   const [contentData, setContentData] = useState<any>(null);
   const [contentId, setContentId] = useState<string | undefined>(undefined);
   const [isPublished, setIsPublished] = useState(false);
+
+  const isCBTTherapy = therapyType === 'cbt_thought_records';
 
   useEffect(() => {
     if (id) {
